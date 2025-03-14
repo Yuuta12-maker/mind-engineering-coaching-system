@@ -55,6 +55,7 @@
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       transition: transform 0.3s;
       overflow: hidden;
+      margin-bottom: 24px;
     }
     
     .card:hover {
@@ -257,6 +258,33 @@
       margin-top: 40px;
       border-top: 1px solid var(--border-color);
     }
+    
+    .recent-clients {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        z-index: 1030;
+        left: -100%;
+        width: 100%;
+        transition: all 0.3s;
+      }
+      
+      .sidebar.show {
+        left: 0;
+      }
+      
+      .content-wrapper {
+        margin-left: 0;
+      }
+      
+      .navbar-brand {
+        margin-left: 40px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -315,7 +343,7 @@
         <!-- ナビゲーションバー -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
           <div class="container-fluid">
-            <button class="navbar-toggler d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+            <button class="navbar-toggler d-md-none" type="button" id="sidebarToggle">
               <span class="navbar-toggler-icon"></span>
             </button>
             <a class="navbar-brand d-md-none" href="#">MEC管理システム</a>
@@ -401,9 +429,9 @@
           <!-- コンテンツエリア -->
           <div class="row">
             <!-- 左カラム -->
-            <div class="col-md-8">
+            <div class="col-md-7">
               <!-- 今日のセッション -->
-              <div class="card mb-4">
+              <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                   <h5 class="mb-0">今日のセッション</h5>
                   <a href="#" class="btn btn-sm btn-outline-light">すべて表示</a>
@@ -454,25 +482,13 @@
                 </div>
               </div>
               
-              <!-- 売上グラフ -->
-              <div class="card mb-4">
-                <div class="card-header">
-                  <h5 class="mb-0">売上推移</h5>
-                </div>
-                <div class="card-body">
-                  <div class="chart-container">
-                    <canvas id="salesChart"></canvas>
-                  </div>
-                </div>
-              </div>
-              
               <!-- 最近のクライアント -->
               <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                   <h5 class="mb-0">最近のクライアント</h5>
                   <a href="#" class="btn btn-sm btn-outline-light">すべて表示</a>
                 </div>
-                <div class="card-body">
+                <div class="card-body recent-clients">
                   <div class="table-responsive">
                     <table class="table table-hover">
                       <thead>
@@ -521,9 +537,9 @@
             </div>
             
             <!-- 右カラム -->
-            <div class="col-md-4">
+            <div class="col-md-5">
               <!-- タスク -->
-              <div class="card mb-4">
+              <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                   <h5 class="mb-0">タスク</h5>
                   <button class="btn btn-sm btn-outline-light">
@@ -583,7 +599,7 @@
               </div>
               
               <!-- クライアント状況 -->
-              <div class="card mb-4">
+              <div class="card">
                 <div class="card-header">
                   <h5 class="mb-0">クライアント状況</h5>
                 </div>
@@ -653,34 +669,15 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // 売上推移グラフ
-    const salesCtx = document.getElementById('salesChart').getContext('2d');
-    const salesChart = new Chart(salesCtx, {
-      type: 'line',
-      data: {
-        labels: ['10月', '11月', '12月', '1月', '2月', '3月'],
-        datasets: [{
-          label: '売上',
-          data: [432000, 540000, 486000, 648000, 594000, 652000],
-          backgroundColor: 'rgba(197, 5, 2, 0.2)',
-          borderColor: '#c50502',
-          borderWidth: 2,
-          tension: 0.3
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: function(value) {
-                return '¥' + value.toLocaleString();
-              }
-            }
-          }
-        }
+    // モバイル用サイドバートグル
+    document.addEventListener('DOMContentLoaded', function() {
+      const sidebarToggle = document.getElementById('sidebarToggle');
+      const sidebar = document.querySelector('.sidebar');
+      
+      if (sidebarToggle && sidebar) {
+        sidebarToggle.addEventListener('click', function() {
+          sidebar.classList.toggle('show');
+        });
       }
     });
     
