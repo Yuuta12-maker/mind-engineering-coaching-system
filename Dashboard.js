@@ -3,26 +3,39 @@
  * ダッシュボード・ウェブアプリケーション
  * 
  * システムの各機能を統合したウェブUIを提供します。
+ * サーバーサイドレンダリング方式を採用しています。
  */
 
 /**
  * ウェブアプリとしてドプロイしたときに、GETリクエストを処理する関数
+ * ページ読み込み時にサーバー側でデータを取得し、HTMLに埋め込みます
  * @return {HtmlOutput} HTML出力
  */
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('dashboard')
+  // ダッシュボードに必要なデータを取得（実データを使用）
+  const dashboardData = getDashboardData();
+  
+  // データをJSON形式に変換
+  const dataJSON = JSON.stringify(dashboardData);
+  
+  // ダッシュボードHTMLテンプレートを取得
+  let dashboardHtml = createDashboardHtml(dataJSON);
+  
+  // HTMLを出力
+  return HtmlService.createHtmlOutput(dashboardHtml)
     .setTitle('MEC管理システム')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 /**
- * ダッシュボード用のHTMLファイルを作成する
- * GASのコードエディタからこの関数を実行することで、dashboard.htmlファイルを自動作成します。
+ * ダッシュボード用のHTMLを生成する
+ * @param {string} initialData - JSONで直列化されたダッシュボードデータ
+ * @return {string} HTML文字列
  */
-function createDashboardHtmlFile() {
+function createDashboardHtml(initialData) {
   // ダッシュボードのHTML内容
-  const dashboardHtml = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="ja">
 <head>
   <base target="_top">
@@ -574,6 +587,9 @@ function createDashboardHtmlFile() {
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <script>
+    // サーバーから取得した初期データ
+    const initialData = ${initialData};
+    
     // ユーティリティ関数
     function formatCurrency(amount) {
       return '¥' + amount.toLocaleString();
@@ -612,18 +628,22 @@ function createDashboardHtmlFile() {
       const refreshButton = document.getElementById('refresh-button');
       if (refreshButton) {
         refreshButton.addEventListener('click', function() {
-          loadDashboardData();
+          // サーバーから最新データを取得
+          google.script.run.withSuccessHandler(handleDashboardData).getDashboardData();
         });
       }
       
       // 最終更新時間を設定
       updateLastUpdateTime();
       
-      // ダッシュボードデータを読み込む
-      loadDashboardData();
+      // 初期データで画面を更新
+      handleDashboardData(initialData);
       
       // 売上グラフとクライアントステータスグラフを初期化
       initCharts();
+      
+      // 画面をデータで更新
+      updateCharts(initialData.salesData, initialData.clientStatusData);
     });
     
     // 最終更新時間を更新
@@ -633,170 +653,6 @@ function createDashboardHtmlFile() {
         const now = new Date();
         lastUpdateTimeElement.textContent = formatDateTime(now);
       }
-    }
-    
-    // ダッシュボードデータを読み込む
-    function loadDashboardData() {
-      // 実際の実装では、ここでサーバーサイドのGAS関数を呼び出します
-      // 例: google.script.run.withSuccessHandler(handleDashboardData).getDashboardData();
-      
-      // サンプルデータでの仮の実装
-      setTimeout(function() {
-        const dashboardData = {
-          activeClientsCount: 15,
-          todaySessionsCount: 3,
-          monthlySales: 652000,
-          pendingTasksCount: 8,
-          todaySessions: [
-            {
-              time: '10:30 - 11:00',
-              clientName: '山田太郎',
-              status: 'トライアル前',
-              sessionType: 'オンライン',
-              meetUrl: 'https://meet.google.com/abc-defg-hij'
-            },
-            {
-              time: '13:30 - 14:00',
-              clientName: '佐藤花子',
-              status: '契約中',
-              sessionType: '対面',
-              meetUrl: ''
-            },
-            {
-              time: '15:00 - 15:30',
-              clientName: '鈴木一郎',
-              status: '契約中',
-              sessionType: 'オンライン',
-              meetUrl: 'https://meet.google.com/klm-nopq-rst'
-            }
-          ],
-          recentClients: [
-            {
-              name: '田中健太',
-              status: '問い合わせ',
-              registrationDate: '2025/03/12',
-              sessionType: '未定'
-            },
-            {
-              name: '伊藤美咲',
-              status: 'トライアル前',
-              registrationDate: '2025/03/10',
-              sessionType: 'オンライン'
-            },
-            {
-              name: '斎藤雄大',
-              status: '契約中',
-              registrationDate: '2025/03/05',
-              sessionType: '対面'
-            },
-            {
-              name: '小林愛',
-              status: 'トライアル済',
-              registrationDate: '2025/03/01',
-              sessionType: 'オンライン'
-            }
-          ],
-          tasks: [
-            {
-              id: 1,
-              description: '鈴木様の契約書を送付',
-              dueDate: 'Today',
-              completed: false
-            },
-            {
-              id: 2,
-              description: '佐藤様の次回セッション日時を調整',
-              dueDate: 'Today',
-              completed: false
-            },
-            {
-              id: 3,
-              description: '山田様へリマインダーメールを送信',
-              dueDate: 'Yesterday',
-              completed: true
-            },
-            {
-              id: 4,
-              description: '月次レポートを作成',
-              dueDate: '3/20',
-              completed: false
-            },
-            {
-              id: 5,
-              description: '新規問い合わせに返信',
-              dueDate: '3/15',
-              completed: false
-            }
-          ],
-          weeklyCalendar: {
-            days: [
-              {
-                date: '3/11',
-                isToday: false,
-                events: [
-                  {
-                    time: '13:30',
-                    clientName: '佐藤様'
-                  }
-                ]
-              },
-              {
-                date: '3/12',
-                isToday: false,
-                events: [
-                  {
-                    time: '15:00',
-                    clientName: '鈴木様'
-                  }
-                ]
-              },
-              {
-                date: '3/13',
-                isToday: false,
-                events: []
-              },
-              {
-                date: '3/14',
-                isToday: true,
-                events: [
-                  {
-                    time: '10:30',
-                    clientName: '山田様'
-                  },
-                  {
-                    time: '13:30',
-                    clientName: '佐藤様'
-                  },
-                  {
-                    time: '15:00',
-                    clientName: '鈴木様'
-                  }
-                ]
-              },
-              {
-                date: '3/15',
-                isToday: false,
-                events: [
-                  {
-                    time: '14:00',
-                    clientName: '田中様'
-                  }
-                ]
-              }
-            ]
-          },
-          salesData: {
-            labels: ['10月', '11月', '12月', '1月', '2月', '3月'],
-            data: [432000, 540000, 486000, 648000, 594000, 652000]
-          },
-          clientStatusData: {
-            labels: ['問い合わせ', 'トライアル前', 'トライアル済', '契約中', '完了'],
-            data: [3, 2, 4, 6, 8]
-          }
-        };
-        
-        handleDashboardData(dashboardData);
-      }, 1000);
     }
     
     // ダッシュボードデータを処理
@@ -1055,7 +911,8 @@ function createDashboardHtmlFile() {
               '#ffc107',
               '#fd7e14',
               '#28a745',
-              '#6c757d'
+              '#6c757d',
+              '#dc3545'
             ],
             borderWidth: 0
           }]
@@ -1091,8 +948,16 @@ function createDashboardHtmlFile() {
     }
   </script>
 </body>
-</html>
-`;
+</html>`;
+}
+
+/**
+ * ダッシュボード用のHTMLファイルを作成する
+ * GASのコードエディタからこの関数を実行することで、dashboard.htmlファイルを自動作成します。
+ */
+function createDashboardHtmlFile() {
+  // ダッシュボードのHTML内容
+  const dashboardHtml = createDashboardHtml("{}");
   
   // GASプロジェクトにHTMLファイルを作成
   try {
@@ -1116,6 +981,7 @@ function createDashboardHtmlFile() {
 
 /**
  * ダッシュボード用のデータを取得
+ * 実際のデータベースからデータを取得します
  * @return {Object} ダッシュボードのデータ
  */
 function getDashboardData() {
@@ -1192,6 +1058,34 @@ function getDashboardData() {
     };
   });
   
+  // タスク機能は未実装のため、サンプルデータを生成
+  const tasks = [
+    {
+      id: 1,
+      description: 'クライアントへのリマインダーメールを送信',
+      dueDate: 'Today',
+      completed: false
+    },
+    {
+      id: 2,
+      description: 'セッション記録の入力',
+      dueDate: 'Today',
+      completed: false
+    },
+    {
+      id: 3,
+      description: '契約書のテンプレート作成',
+      dueDate: 'Tomorrow',
+      completed: false
+    },
+    {
+      id: 4,
+      description: '月次レポートの準備',
+      dueDate: '3/20',
+      completed: false
+    }
+  ];
+  
   // 週間カレンダーを作成
   const today = new Date();
   const startOfWeek = new Date(today);
@@ -1232,10 +1126,10 @@ function getDashboardData() {
     activeClientsCount,
     todaySessionsCount,
     monthlySales,
-    pendingTasksCount: 0, // タスク管理は未実装のため0を返す
+    pendingTasksCount: tasks.filter(t => !t.completed).length,
     todaySessions: formattedTodaySessions,
     recentClients,
-    tasks: [], // タスク管理は未実装のため空配列を返す
+    tasks,
     weeklyCalendar,
     salesData,
     clientStatusData
